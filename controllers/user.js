@@ -302,7 +302,7 @@ const getuserProfile = asyncHandler(async (req,res) => {
   const id = req.user._id;
   const result = await User.aggregate([
   {
-    $match: { _id: new mongoose.Types.ObjectId(id) }
+    $match: { _id:id }
   },
   {
     $lookup: {
@@ -314,8 +314,8 @@ const getuserProfile = asyncHandler(async (req,res) => {
   },
   {
     $addFields: {
-      adsCount: { $size: "$user_ads" },
-      soldItems: {
+      totalAds: { $size: "$user_ads" },
+      completedAds: {
         $size: {
           $filter: {
             input: "$user_ads",
@@ -324,7 +324,7 @@ const getuserProfile = asyncHandler(async (req,res) => {
           }
         }
       },
-      unsoldItems: {
+      activeAds: {
         $size: {
           $filter: {
             input: "$user_ads",
@@ -343,9 +343,9 @@ const getuserProfile = asyncHandler(async (req,res) => {
       email: 1,
       phone: 1,
       createdAt: 1,
-      adsCount: 1,
-      soldItems: 1,
-      unsoldItems: 1
+      totalAds: 1,
+      completedAds: 1,
+      activeAds: 1
     }
   }
 ]);
