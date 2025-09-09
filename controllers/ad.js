@@ -32,3 +32,21 @@ export const postAd = asyncHandler(asyncHandler(async (req, res) => {
     res.status(201).json(new ApiResponse(201, ad, "Ad posted successfully"));
 }));
 
+
+export const updateAd = asyncHandler(async (req, res) => {
+  const { title, description, price,location,isPhoneVisible } = req.body;
+  const adId = req.params.id
+
+  if (!title && !description && price == null&&!location&&isPhoneVisible === undefined) {
+    throw new ApiError(400, "At least one field is required to update");
+  }
+  const updatedAd = await Ad.findByIdAndUpdate(adId, {title,description,price,location,isPhoneVisible}, { new: true });
+
+  if (!updatedAd) {
+    throw new ApiError(404, "Ad not found");
+  }
+
+  res.status(200).json(new ApiResponse(200, updatedAd, "Ad updated successfully"));
+});
+
+
