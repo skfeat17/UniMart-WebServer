@@ -25,9 +25,9 @@ const adSchema = new mongoose.Schema(
       type: String,
       trim: true
     },
-    isSold: {
+    isActive: {
       type: Boolean,
-      default: false
+      default: true
     },
     isPhoneVisible: {
       type: Boolean,

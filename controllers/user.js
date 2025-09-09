@@ -315,12 +315,12 @@ const getuserProfile = asyncHandler(async (req,res) => {
   {
     $addFields: {
       totalAds: { $size: "$user_ads" },
-      completedAds: {
+      inActiveAds: {
         $size: {
           $filter: {
             input: "$user_ads",
             as: "ad",
-            cond: { $eq: ["$$ad.isSold", true] }
+            cond: { $eq: ["$$ad.isActive", false] }
           }
         }
       },
@@ -329,7 +329,7 @@ const getuserProfile = asyncHandler(async (req,res) => {
           $filter: {
             input: "$user_ads",
             as: "ad",
-            cond: { $eq: ["$$ad.isSold", false] }
+            cond: { $eq: ["$$ad.isActive", true] }
           }
         }
       }
@@ -344,7 +344,7 @@ const getuserProfile = asyncHandler(async (req,res) => {
       phone: 1,
       createdAt: 1,
       totalAds: 1,
-      completedAds: 1,
+      inActiveAds: 1,
       activeAds: 1
     }
   }
