@@ -3,7 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadToCloudinary } from "../utils/cloudinaryUpload.js";
-
+import mongoose from "mongoose";
 //Post a New Ad
 export const postAd = asyncHandler(asyncHandler(async (req, res) => {
   const { title, description, price, category, location } = req.body;
@@ -83,8 +83,6 @@ export const deleteAd = asyncHandler(async (req, res) => {
   res.status(200)
     .json(new ApiResponse(200, {}, "Ad Deleted Successfully"))
 })
-//Single Ad Details
-
 //Show All Ads
 export const showAllAds = asyncHandler(async (req, res) => {
   const adsArray = await Ad.aggregate(
@@ -168,7 +166,7 @@ export const showAdsByCat = asyncHandler(async (req, res) => {
             location: "$location",
             price: "$price",
             intrestShown: "$intrestShown",
-            createdAt:"$createdAt"
+            createdAt: "$createdAt"
           }
         }
       }
@@ -180,4 +178,51 @@ export const showAdsByCat = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Error Occurred while fetching the ads")
   }
   res.status(200).json(new ApiResponse(200, adsArray, "Ads Fetched Successfully with Category"))
+})
+export const getAdById = asyncHandler(async (req, res) => {
+  const adId = req.params.id;
+  await Ad.findByIdAndUpdate(
+    adId,
+    { $inc: { intrestShown: 1 } },
+    { new: true }
+  );
+
+  const adObj = await Ad.aggregate(
+    [
+      { $match: { _id: new mongoose.Types.ObjectId(adId) } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "sellerId",
+          foreignField: "_id",
+          as: "owner",
+          pipeline: [
+            {
+              $project: {
+                _id: 0,
+                avatar: 1,
+                name: 1,
+                phone: 1
+              }
+            }
+          ]
+        }
+      },
+      {
+        $unwind: {
+          path: "$owner"
+        }
+      },
+      {
+        $sort: {
+          createdAt: -1,
+          intrestShown: -1
+        }
+      }
+    ]
+  )
+  if (!adObj) {
+    throw new ApiError(500, "Error Occurred while fetching the ads")
+  }
+  res.status(200).json(new ApiResponse(200, adObj[0], "Ad Fetched Successfully"))
 })
