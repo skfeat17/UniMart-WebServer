@@ -14,12 +14,12 @@ app.use(cookieParser())
 //routes import
 import userRouter from './routes/user.js'
 import adRouter from './routes/ad.js'
-
+import messageRouter from './routes/message.js'
 
 //routes declaration
 app.use("/api/v1/users", userRouter)
 app.use("/api/v1/ads", adRouter)
-
+app.use("/api/v1/message",messageRouter)
 app.use(errorHandler);
 
 

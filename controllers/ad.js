@@ -5,7 +5,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadToCloudinary } from "../utils/cloudinaryUpload.js";
 import mongoose from "mongoose";
 //Post a New Ad
-export const postAd = asyncHandler(asyncHandler(async (req, res) => {
+export const postAd = asyncHandler(async (req, res) => {
   const { title, description, price, category, location } = req.body;
 
   if (!title || !description || !price || !category || !location) {
@@ -30,7 +30,7 @@ export const postAd = asyncHandler(asyncHandler(async (req, res) => {
     location: location.trim()
   });
   res.status(201).json(new ApiResponse(201, ad, "Ad posted successfully"));
-}));
+});
 //Update Ad Details
 export const updateAd = asyncHandler(async (req, res) => {
   const { title, description, price, location, isPhoneVisible } = req.body;
@@ -179,6 +179,7 @@ export const showAdsByCat = asyncHandler(async (req, res) => {
   }
   res.status(200).json(new ApiResponse(200, adsArray, "Ads Fetched Successfully with Category"))
 })
+//SHOW AD BY ID
 export const getAdById = asyncHandler(async (req, res) => {
   const adId = req.params.id;
   await Ad.findByIdAndUpdate(

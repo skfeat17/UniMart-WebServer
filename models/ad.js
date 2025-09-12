@@ -40,10 +40,6 @@ const adSchema = new mongoose.Schema(
     intrestShown: {
       type: Number,
       default: 0
-    },
-    reports: {
-      type: Number,
-      default: 0
     }
   },
   {
