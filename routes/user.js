@@ -5,7 +5,8 @@ import {
     changeUserPassword,
     sendOTP,
     resetPassword,
-    getuserProfile
+    getuserProfile,
+    updateLastSeen
 } from "../controllers/user.js";
 import { verifyJWT } from "../middlewares/verify.js";
 import { upload } from "../middlewares/multer.js";
@@ -22,4 +23,5 @@ router.post("/changepassword",verifyJWT,changeUserPassword)
 router.post("/sendotp",sendOTP)
 router.post("/reset",resetPassword)
 router.get("/profile",verifyJWT,getuserProfile)
+router.put("/active",verifyJWT,updateLastSeen)
 export default router

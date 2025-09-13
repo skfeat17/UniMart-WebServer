@@ -85,6 +85,8 @@ export const deleteAd = asyncHandler(async (req, res) => {
 })
 //Show All Ads
 export const showAllAds = asyncHandler(async (req, res) => {
+  const limit = parseInt(req.query.limit) || 20;
+  const skip = parseInt(req.query.skip) || 0;
   const adsArray = await Ad.aggregate(
     [
       {
@@ -114,7 +116,8 @@ export const showAllAds = asyncHandler(async (req, res) => {
           createdAt: -1,
           intrestShown: -1
         }
-      }
+      },    { $skip: skip },
+    { $limit: limit }
     ]
   )
   if (!adsArray) {
@@ -124,6 +127,8 @@ export const showAllAds = asyncHandler(async (req, res) => {
 })
 //SHOW ADS BY CATEGORY
 export const showAdsByCat = asyncHandler(async (req, res) => {
+  const limit = parseInt(req.query.limit) || 20;
+  const skip = parseInt(req.query.skip) || 0;
   const adsArray = await Ad.aggregate([
     {
       $lookup: {
@@ -170,7 +175,8 @@ export const showAdsByCat = asyncHandler(async (req, res) => {
           }
         }
       }
-    }
+    },    { $skip: skip },
+    { $limit: limit }
 
   ]
   )

@@ -93,3 +93,63 @@ export const InboxList = asyncHandler(async (req,res) => {
     res.status(200).json(new ApiResponse(200,inboxObj,"Inbox Fetched Successfully"));
 });
 //Chat 
+export const getChatMessages = asyncHandler(async (req, res) => {
+  const userId = new mongoose.Types.ObjectId(req.user._id); // logged-in user
+  const otherUserId = new mongoose.Types.ObjectId(req.params.id); // chat partner
+
+  // from frontend: ?limit=20&skip=40
+  const limit = parseInt(req.query.limit) || 20;
+  const skip = parseInt(req.query.skip) || 0;
+
+  let messages = await Message.aggregate([
+    {
+      $match: {
+        $or: [
+          { senderId: userId, receiverId: otherUserId },
+          { senderId: otherUserId, receiverId: userId }
+        ]
+      }
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "senderId",
+        foreignField: "_id",
+        as: "sender",
+        pipeline: [
+          { $project: { name: 1, lastseen: 1, avatar: 1 } }
+        ]
+      }
+    },
+    { $unwind: "$sender" },
+    { $sort: { createdAt: -1 } }, // newest first
+    { $skip: skip },
+    { $limit: limit }
+  ]);
+
+  // 🔑 Decrypt message text
+  messages = messages.map(m => ({
+    ...m,
+    message: decryptMsg(m.message)
+  }));
+
+  res.status(200).json(new ApiResponse(200, messages, "Chat messages fetched"));
+});
+//MARK MESSAGES AS READ
+export const markMessagesRead = asyncHandler(async (req, res) => {
+  const userId = req.user._id; // logged-in user
+  const otherUserId = req.params.chatUserId;
+
+  if (!otherUserId) {
+    res.status(400);
+    throw new ApiError(404,"Chat User Id is Required")
+  }
+
+  // Update all messages sent by otherUser to current user and not read yet
+  const result = await Message.updateMany(
+    { senderId: otherUserId, receiverId: userId, isRead: false },
+    { $set: { isRead: true } }
+  );
+
+  res.status(200).json(new ApiResponse(200,null,`${result.modifiedCount} messages marked as read`));
+});

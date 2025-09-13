@@ -90,7 +90,6 @@ const logInUser = asyncHandler(async (req, res) => {
   const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(user._id);
 
   const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
-  console.log(loggedInUser)
   res.status(201)
     .cookie("accessToken", accessToken, httpOptions)
     .cookie("refreshToken", refreshToken, httpOptions
@@ -159,7 +158,6 @@ const logOutUser = asyncHandler(async (req, res) => {
 //REFRESH ACCESS TOKEN
 const refreshAccessToken = asyncHandler(async (req, res) => {
   const token = req.cookies?.refreshToken || req.header("Authorization")?.replace("Bearer ", "");
-  console.log(token)
   if (!token) {
     throw new ApiError(401, "Unauthorized request")
   }
@@ -353,6 +351,20 @@ const getuserProfile = asyncHandler(async (req,res) => {
 res.status(200).json(new ApiResponse(200,result[0],"Profile Fetched Successfully"))
 
 })
+//UPDATE USER ACTIVE STATUS
+// Update Last Seen
+const updateLastSeen = asyncHandler(async (req, res) => {
+  const userId = req.user._id; // comes from auth middleware (decoded token)
+
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { lastseen: new Date() },
+    { new: true }
+  ).select("-password");
+
+
+  res.status(200).json(new ApiResponse(200,user.lastseen,"Last Seen Updated Successfully"));
+});
 
 
 export {
@@ -365,5 +377,6 @@ export {
   changeUserPassword,
   sendOTP,
   resetPassword,
-  getuserProfile
+  getuserProfile,
+  updateLastSeen
 }
