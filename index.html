@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Responsive Chat App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://js.pusher.com/8.2/pusher.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://js.pusher.com/beams/2.1.0/push-notifications-cdn.js"></script>
+  <style>
+    /* Typing indicator dots */
+    .typing-dots {
+      display: flex;
+      gap: 4px;
+      height: 10px;
+    }
+
+    .typing-dots span {
+      width: 6px;
+      height: 6px;
+      background-color: gray;
+      border-radius: 50%;
+      display: inline-block;
+      animation: bounce 1s infinite;
+    }
+
+    .typing-dots span:nth-child(1) {
+      animation-delay: 0s;
+    }
+
+    .typing-dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+  </style>
+</head>
+
+<body class="h-screen flex flex-col bg-gray-50">
+
+  <!-- Navbar -->
+  <nav class="fixed top-0 left-0 w-full bg-blue-500 text-white p-4 shadow-md z-10">
+    <h1 class="text-lg sm:text-xl font-bold text-center">REAL TIME CHAT</h1>
+  </nav>
+
+  <!-- Chat container -->
+  <div id="chatBox" class="flex-1 mt-16 mb-24 p-4 flex flex-col gap-3 overflow-auto"></div>
+
+  <!-- Input -->
+  <div class="fixed bottom-0 left-0 w-full p-3 bg-gray-100 flex items-center gap-2">
+    <input type="text" id="messageInput"
+      class="flex-grow p-3 text-base border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+      placeholder="Type a message...">
+    <button id="sendButton"
+      class="bg-blue-500 text-white px-4 py-2 text-base rounded-xl hover:bg-blue-600">Send</button>
+  </div>
+
+  <script>
+    if (Notification.permission !== "granted") {
+  Notification.requestPermission();
+}
+    const USER_API = "https://globe-chat-api.vercel.app/api/v1/users";
+    const token = localStorage.getItem("accessToken");
+    const username = "User" + Math.floor(Math.random() * 1000);
+
+    const beamsClient = new PusherPushNotifications.Client({
+  instanceId: "e7c78238-d563-465f-ba04-ef4d1157e744",
+});
+
+async function initBeams() {
+  try {
+    await beamsClient.start();
+    await beamsClient.addDeviceInterest("chat"); // all devices subscribed to "chat"
+    console.log("Beams registered & subscribed!");
+  } catch (err) {
+    console.error("Beams init error:", err);
+  }
+}
+
+initBeams();
+
+    const pusher = new Pusher("f154a4e3ab24faa32519", {
+      cluster: "ap2",
+      authEndpoint: `${USER_API}/pusher/auth`,
+      auth: { headers: { Authorization: `Bearer ${token}` } }
+    });
+
+    const channel = pusher.subscribe("private-chat");
+    const chatBox = document.getElementById("chatBox");
+    let typingTimeout;
+
+    // Add message to chat
+    function addMessage(text, type) {
+      const div = document.createElement("div");
+      div.textContent = text;
+
+      if (type === "received") {
+        div.className =
+          "px-4 py-3 text-base bg-gray-200 text-gray-900 rounded-3xl self-start max-w-[85%] sm:max-w-[70%]";
+      } else {
+        div.className =
+          "px-4 py-3 text-base bg-blue-500 text-white rounded-3xl self-end max-w-[85%] sm:max-w-[70%]";
+      }
+
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // Send message
+    function sendMessage() {
+      const input = document.getElementById("messageInput");
+      const msg = input.value.trim();
+      if (!msg) return;
+
+      addMessage(`${msg}`, "sent");
+      channel.trigger("client-new-message", { text: msg, user: username });
+      input.value = "";
+    }
+
+    // Trigger typing
+    const inputField = document.getElementById("messageInput");
+    inputField.addEventListener("input", () => {
+      channel.trigger("client-typing", { user: username });
+    });
+
+    // Listen for new messages
+ channel.bind("client-new-message", (data) => {
+  if (data.user !== username) {
+    addMessage(`${data.text}`, "received");
+
+    // Show notification via Beams
+    if (Notification.permission === "granted") {
+      new Notification("📩 New Message", {
+        body: `${data.user}: ${data.text}`,
+        icon: "https://cdn-icons-png.flaticon.com/512/726/726623.png"
+      });
+    }
+  }
+});
+
+
+
+    // Listen for typing events
+    channel.bind("client-typing", (data) => {
+      if (data.user !== username) {
+        let bubble = document.getElementById("typingBubble");
+        if (!bubble) {
+          bubble = document.createElement("div");
+          bubble.id = "typingBubble";
+          bubble.className =
+            "px-4 py-3 text-base bg-gray-200 text-gray-900 rounded-3xl self-start max-w-[85%] sm:max-w-[70%]";
+          bubble.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div>`;
+          chatBox.appendChild(bubble);
+          chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+          if (bubble) chatBox.removeChild(bubble);
+        }, 1200);
+      }
+    });
+
+    document.getElementById("sendButton").addEventListener("click", sendMessage);
+    inputField.addEventListener("keypress", e => {
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
+</body>
+</html>
